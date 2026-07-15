@@ -1,0 +1,42 @@
+defaults:
+  - model: transformer
+  - writer: wandb
+  - metrics: addition
+  - datasets: addition
+  - dataloader: addition
+  - transforms: empty
+  - _self_
+
+optimizer:
+  _target_: torch.optim.AdamW
+  lr: 3e-4
+  weight_decay: 0.01
+
+# Cosine schedule with a short warmup (5%). OneCycleLR needs the exact number of
+# optimizer steps; it equals n_epochs * epoch_len since the scheduler steps once
+# per training batch and each epoch runs exactly epoch_len batches.
+lr_scheduler:
+  _target_: torch.optim.lr_scheduler.OneCycleLR
+  max_lr: ${optimizer.lr}
+  total_steps: ${mul:${trainer.n_epochs},${trainer.epoch_len}}
+  pct_start: 0.05
+  anneal_strategy: cos
+  cycle_momentum: false
+
+loss_function:
+  _target_: src.loss.masked_ce.MaskedCrossEntropyLoss
+
+trainer:
+  log_step: 50
+  n_epochs: 20            # x epoch_len = ~5000 optimizer steps
+  epoch_len: 250          # iteration-based: one "epoch" = 250 steps, then eval
+  device_tensors: ["input_ids", "loss_mask"]
+  max_grad_norm: 1.0
+  resume_from: null       # null or a checkpoint dir with *.pth + config.yaml
+  device: auto            # "auto" resolves to CPU when no GPU is present
+  override: False         # set True to overwrite a previous run with the same name
+  monitor: "max val_ExactMatch"  # maximize in-distribution exact match
+  save_period: 5          # extra checkpoint every N epochs (best is always saved)
+  early_stop: ${trainer.n_epochs}
+  save_dir: "saved"
+  seed: 1

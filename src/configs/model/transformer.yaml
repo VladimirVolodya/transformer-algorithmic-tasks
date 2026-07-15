@@ -1,0 +1,14 @@
+# Small config (~0.8M params, CPU-friendly). Everything is identical across the
+# three PE variants except `pe_variant`, so any OOD difference is due to PE alone.
+_target_: src.model.transformer.DecoderTransformer
+vocab_size: 14        # digits 0-9, +, =, <eos>, <pad>
+d_model: 128
+n_layers: 4
+n_heads: 2
+head_dim: 64
+d_ff: 512             # 4x expansion
+max_len: 64           # covers the longest OOD sequence (~49); absolute PE
+                      # positions beyond the training range are untrained (the point)
+pe_variant: absolute  # override per run: absolute | nope | rope
+dropout: 0.0
+pad_id: 13

@@ -1,0 +1,8 @@
+# Teacher-forced exact match (in-distribution monitor). The authoritative
+# autoregressive length-generalization metric lives in src/evaluation.
+train:
+  - _target_: src.metrics.exact_match.ExactMatch
+    name: "ExactMatch"
+inference:
+  - _target_: src.metrics.exact_match.ExactMatch
+    name: "ExactMatch"
