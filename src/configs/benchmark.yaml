@@ -1,0 +1,20 @@
+defaults:
+  - model: transformer
+  - _self_
+
+# The model's vocab_size / pad_id are overridden at runtime with the unified
+# task vocabulary (19 tokens), so the `model` group only fixes the architecture.
+benchmark:
+  tasks: [addition, sort, dyck, index]
+  steps: 5000            # per task; matches the validated addition budget
+  batch_size: 256
+  lr: 3e-4
+  train_min_len: 1
+  train_max_len: 5
+  id_lengths: [1, 2, 3, 4, 5]
+  ood_lengths: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  n_eval: 300            # examples per (task, length) eval set
+  train_seed: 1          # keep constant across architectures: same train stream
+  eval_seed: 0           # keep constant across architectures: same eval sets
+  device: auto
+  save_path: saved/benchmark_${model.pe_variant}.json

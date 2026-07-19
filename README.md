@@ -72,6 +72,44 @@ Full per-length curve, money plot, and PASS/FAIL verdict:
 uv run jupyter lab notebooks/length_generalization.ipynb   # Restart & Run All
 ```
 
+## Multi-task benchmark (ADDITION / SORT / DYCK / INDEX)
+
+Beyond addition, three more algorithmic probes share one 19-token vocabulary and one
+train/eval pipeline (`src/tasks/`):
+
+| Task | Tests | Example (`prompt = answer <eos>`) |
+| --- | --- | --- |
+| ADDITION | carry propagation | `29385+81947= 013331` (reversed digits) |
+| SORT | global comparisons | `372= 237` (ascending) |
+| DYCK | stack thinking | `([])()= 1` / `([)]= 0` (Dyck-2 membership, Bhattamishra et al. 2020) |
+| INDEX | positional access | `372,1= 7` (0-based; index kept single-digit even OOD) |
+
+All data is model-independent and seeded: the train stream depends only on
+`(task, train_seed)` and each eval set only on `(task, length, eval_seed)`, so **every
+architecture is trained and scored on identical values**. `run_benchmark` trains a fresh
+model per task (same recipe as `train.yaml`: AdamW + OneCycle, answer-only masked CE,
+5000×256 budget), evaluates exact match per length in-domain (1–5) and OOD (6–15), and
+returns/saves a JSON with per-task metrics:
+
+```bash
+uv run python benchmark.py model.pe_variant=rope    # -> saved/benchmark_rope.json
+```
+
+or from code:
+
+```python
+from functools import partial
+from src.benchmark import run_benchmark
+from src.model.transformer import DecoderTransformer
+
+make_model = partial(DecoderTransformer, d_model=128, n_layers=4, n_heads=2,
+                     head_dim=64, d_ff=512, max_len=64, pe_variant="rope")
+results = run_benchmark(make_model)   # {"tasks": {"addition": {"in_domain": ..., "ood": ...}, ...}}
+```
+
+DYCK negatives are balanced words corrupted at one position (near-misses that defeat
+count-only heuristics); its exact-match floor is the 0.5 coin-flip baseline.
+
 ## Experiment tracking (wandb)
 
 Defaults to **offline** — logs to `./wandb/`, no account or login needed. To use live dashboards:
@@ -102,6 +140,8 @@ uv run pytest -q     # data-format + loss-mask guardrails and model sanity (CPU)
 | Path | Purpose |
 | --- | --- |
 | `src/datasets/` | tokenizer, on-the-fly `AdditionDataset`, padding collate |
+| `src/tasks/` | multi-task benchmark: shared vocab + ADDITION/SORT/DYCK/INDEX tasks, eval |
+| `src/benchmark.py` | `run_benchmark()` — train+eval a fixed architecture on all four tasks |
 | `src/model/` | `DecoderTransformer` (+ RoPE helpers), `generate()` |
 | `src/loss/`, `src/metrics/` | masked cross-entropy, teacher-forced exact match |
 | `src/evaluation/` | autoregressive per-length exact-match sweep (authoritative metric) |
