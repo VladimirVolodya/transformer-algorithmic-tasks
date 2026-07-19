@@ -2,9 +2,8 @@
 
 One shared vocabulary covers ADDITION, SORT, DYCK and INDEX so the model
 architecture (embedding/head sizes included) is literally identical across
-tasks. Ids ``0..13`` coincide with the legacy addition-only
-:class:`src.datasets.tokenizer.Tokenizer` (digit ``d`` maps to id ``d``,
-``pad_id == 13``); the bracket and comma tokens are appended after.
+tasks. Digit ``d`` maps to id ``d``; ``pad_id == 13``. Bracket and comma
+tokens are appended after the core 14 symbols.
 
 Every task's sequence has the shape::
 
@@ -24,8 +23,7 @@ COMMA = ","
 OPENERS = ["(", "["]
 CLOSERS = [")", "]"]
 
-# Fixed order. The first 14 entries MUST match the legacy addition tokenizer
-# (digit d -> id d, pad_id 13) so both tokenizers agree wherever they overlap.
+# Fixed order: digit d -> id d, pad_id 13, then brackets and comma.
 VOCAB = DIGITS + [PLUS, EQ, EOS, PAD] + OPENERS + CLOSERS + [COMMA]
 VOCAB_SIZE = len(VOCAB)  # 19
 

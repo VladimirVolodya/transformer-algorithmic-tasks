@@ -132,7 +132,7 @@ def run_benchmark(
         n_eval: examples per (task, length) eval set.
         train_seed / eval_seed: fix the data; keep them constant across
             architectures so everyone sees the same train/test values.
-        device: "auto" resolves to CUDA when available.
+        device: "auto" resolves to CUDA, else MPS, else CPU.
         save_path: optional path to also dump the results dict as JSON.
 
     Returns:
@@ -140,7 +140,12 @@ def run_benchmark(
         (in-domain and OOD exact match per length and averaged).
     """
     if device == "auto":
-        device = "cuda" if torch.cuda.is_available() else "cpu"
+        if torch.cuda.is_available():
+            device = "cuda"
+        elif getattr(torch.backends, "mps", None) is not None and torch.backends.mps.is_available():
+            device = "mps"
+        else:
+            device = "cpu"
     id_lengths = list(id_lengths)
     ood_lengths = list(ood_lengths)
 

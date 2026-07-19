@@ -2,14 +2,14 @@
 
 import torch
 
-from src.datasets.tokenizer import Tokenizer
 from src.model.transformer import DecoderTransformer
+from src.tasks.vocab import TaskTokenizer
 
 VARIANTS = ["absolute", "nope", "rope"]
 
 
 def _make_model(pe_variant):
-    tok = Tokenizer()
+    tok = TaskTokenizer()
     return DecoderTransformer(
         vocab_size=tok.vocab_size,
         d_model=128,
@@ -30,7 +30,7 @@ def test_param_count_is_about_0_8M():
 
 
 def test_forward_shape():
-    tok = Tokenizer()
+    tok = TaskTokenizer()
     for variant in VARIANTS:
         model = _make_model(variant)
         x = torch.randint(0, tok.vocab_size, (4, 20))
@@ -38,7 +38,7 @@ def test_forward_shape():
 
 
 def test_generate_shape_and_stops():
-    tok = Tokenizer()
+    tok = TaskTokenizer()
     model = _make_model("rope")
     prompt = torch.randint(0, 10, (3, 8))
     gen = model.generate(prompt, max_new_tokens=10, eos_id=tok.eos_id)
@@ -46,7 +46,7 @@ def test_generate_shape_and_stops():
 
 
 def test_absolute_pe_survives_ood_length():
-    tok = Tokenizer()
+    tok = TaskTokenizer()
     model = _make_model("absolute")
     # longest OOD sequence (~49 tokens) is below max_len=64 -> must not raise
     x = torch.randint(0, tok.vocab_size, (2, 49))

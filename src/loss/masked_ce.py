@@ -1,9 +1,8 @@
-"""Next-token cross-entropy computed **only on answer tokens** (plan §2).
+"""Next-token cross-entropy computed **only on answer tokens**.
 
 ``logits[:, :-1]`` predict ``input_ids[:, 1:]``; the loss is averaged over the
-positions where the shifted ``loss_mask`` is 1 (the digits of ``rev(s)`` and
-``<eos>``). Everything before ``=`` and all padding is ignored. Getting this
-mask wrong silently ruins training, so it is asserted in the tests.
+positions where the shifted ``loss_mask`` is 1 (answer symbols and ``<eos>``).
+Everything before ``=`` and all padding is ignored.
 """
 
 import torch

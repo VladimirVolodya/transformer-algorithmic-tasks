@@ -1,4 +1,0 @@
-_target_: torch.utils.data.DataLoader
-batch_size: 256
-num_workers: 2      # CPU-only; set 0 for fully deterministic single-process data
-pin_memory: False

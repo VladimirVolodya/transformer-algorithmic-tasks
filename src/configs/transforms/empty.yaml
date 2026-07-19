@@ -1,4 +1,0 @@
-defaults:
-  - batch_transforms: empty
-  - instance_transforms: empty
-  - _self_
