@@ -1,7 +1,8 @@
 # Small config (~0.8M params, CPU-friendly). Everything is identical across the
 # three PE variants except `pe_variant`, so any OOD difference is due to PE alone.
+# vocab_size / pad_id are overridden at runtime by the unified task vocabulary.
 _target_: src.model.transformer.DecoderTransformer
-vocab_size: 14        # digits 0-9, +, =, <eos>, <pad>
+vocab_size: 19        # TaskTokenizer size (digits, ops, brackets, comma, specials)
 d_model: 128
 n_layers: 4
 n_heads: 2

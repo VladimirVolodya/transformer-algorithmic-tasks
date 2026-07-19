@@ -1,7 +1,7 @@
 [project]
 name = "transformer-algorithmic-tasks"
 version = "0.1.0"
-description = "From-scratch decoder-only transformer for algorithmic tasks: reversed-digit addition length-generalization with swappable positional encodings (absolute / NoPE / RoPE)."
+description = "From-scratch decoder-only transformer for algorithmic tasks (ADDITION / SORT / DYCK / INDEX) with a unified train+eval benchmark and swappable positional encodings."
 requires-python = "==3.11.*"
 dependencies = [
     "torch==2.2.0",

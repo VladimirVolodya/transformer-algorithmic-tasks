@@ -1,10 +1,9 @@
 """Autoregressive greedy exact-match evaluation, generic over tasks.
 
-Task-agnostic version of :mod:`src.evaluation.length_generalization`: decode
-greedily from the ``=`` prompt and count a sequence correct iff every answer
-symbol **and** the ``<eos>`` position are right. Fixed-length eval sets have
-identical prompt lengths within a task, so a whole length is decoded as one
-batch (asserted below).
+Decode greedily from the ``=`` prompt and count a sequence correct iff every
+answer symbol **and** the ``<eos>`` position are right. Fixed-length eval sets
+have identical prompt lengths within a task, so a whole length is decoded as
+one batch (asserted below).
 """
 
 from __future__ import annotations

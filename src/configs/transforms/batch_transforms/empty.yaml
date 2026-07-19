@@ -1,3 +1,0 @@
-# No batch transforms for the addition task.
-train: null
-inference: null

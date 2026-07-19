@@ -2,13 +2,13 @@
 
 Reversed-digit addition: ``rev(a) + rev(b) = rev(a+b)``. Length is the operand
 digit count; training draws the two operand lengths independently, eval uses
-the same length for both (matching the legacy ``AdditionDataset`` semantics).
+the same length for both (benchmark eval convention).
 """
 
 from __future__ import annotations
 
-from src.datasets.sampling import sample_operand
 from src.tasks.base import Task
+from src.tasks.sampling import sample_operand
 from src.tasks.vocab import EQ, PLUS
 
 

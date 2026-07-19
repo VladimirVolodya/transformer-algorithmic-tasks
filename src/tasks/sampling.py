@@ -1,8 +1,7 @@
-"""Operand sampling shared by the dataset and the evaluation module.
+"""Operand sampling for ADDITION (shared by train and eval).
 
 Keeping a single sampler here guarantees the deterministic eval sets used by
-the training monitor and by the length-generalization curve are generated
-identically.
+the benchmark are generated identically for every architecture.
 """
 
 from __future__ import annotations

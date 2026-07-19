@@ -1,12 +1,11 @@
 """Guardrail tests for the multi-task benchmark (SORT / DYCK / INDEX + shared
-tokenizer). Mirrors the addition-format guardrails: a wrong answer construction
-or loss mask silently invalidates every benchmark number, so these run first.
+tokenizer). A wrong answer construction or loss mask silently invalidates every
+benchmark number, so these run first.
 """
 
 import numpy as np
 import torch
 
-from src.datasets.tokenizer import Tokenizer as LegacyTokenizer
 from src.tasks import TASKS, TaskTokenizer
 from src.tasks.data import make_eval_set, make_train_batch
 from src.tasks.dyck import corrupt, is_balanced, sample_balanced
@@ -22,12 +21,13 @@ def _rng(seed):
 # --- shared vocabulary ------------------------------------------------------
 
 
-def test_unified_vocab_extends_legacy():
-    legacy, unified = LegacyTokenizer(), TaskTokenizer()
-    # ids 0..13 identical -> digit d is id d, pad/eos ids unchanged
-    assert unified.itos[: legacy.vocab_size] == legacy.itos
-    assert unified.pad_id == legacy.pad_id
-    assert unified.eos_id == legacy.eos_id
+def test_vocab_core_ids():
+    tok = TaskTokenizer()
+    # digit d -> id d; pad/eos stable
+    assert [tok.stoi[str(d)] for d in range(10)] == list(range(10))
+    assert tok.pad_id == 13
+    assert tok.eos_id == 12
+    assert tok.vocab_size == 19
 
 
 def test_make_example_masks_answer_only():
@@ -45,17 +45,21 @@ def test_make_example_masks_answer_only():
             assert prompt[-1] == EQ  # generation seed is always '='
 
 
-# --- addition (task wrapper must match the legacy format) -------------------
+# --- addition ---------------------------------------------------------------
 
 
-def test_addition_task_matches_legacy_tokenizer():
-    task, legacy = TASKS["addition"](), LegacyTokenizer()
+def test_addition_reversed_format():
+    from src.tasks.vocab import PLUS
+
+    task = TASKS["addition"]()
     rng = _rng(1)
     for _ in range(300):
         inst = task.sample_train(rng.integers, 1, 5)
-        expected, answer_start = legacy.example_symbols(inst["a"], inst["b"])
-        assert task.prompt_symbols(inst) == expected[:answer_start]
-        assert task.answer_symbols(inst) + [EOS] == expected[answer_start:]
+        prompt = task.prompt_symbols(inst)
+        answer = task.answer_symbols(inst)
+        assert PLUS in prompt and prompt[-1] == EQ
+        assert prompt.index(PLUS) < len(prompt) - 1
+        assert "".join(answer) == str(inst["a"] + inst["b"])[::-1]
 
 
 # --- sort -------------------------------------------------------------------
