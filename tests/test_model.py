@@ -5,7 +5,7 @@ import torch
 from src.datasets.tokenizer import Tokenizer
 from src.model.transformer import DecoderTransformer
 
-VARIANTS = ["absolute", "nope", "rope"]
+VARIANTS = ["absolute", "nope", "rope", "abs_shift"]
 
 
 def _make_model(pe_variant):
@@ -51,6 +51,29 @@ def test_absolute_pe_survives_ood_length():
     # longest OOD sequence (~49 tokens) is below max_len=64 -> must not raise
     x = torch.randint(0, tok.vocab_size, (2, 49))
     assert model(input_ids=x)["logits"].shape == (2, 49, tok.vocab_size)
+
+
+def test_abs_shift_eval_is_deterministic_and_offset_free():
+    tok = Tokenizer()
+    model = _make_model("abs_shift").eval()
+    x = torch.randint(0, tok.vocab_size, (2, 20))
+    logits1 = model(input_ids=x)["logits"]
+    logits2 = model(input_ids=x)["logits"]
+    assert torch.equal(logits1, logits2), "eval must use a fixed offset of 0"
+
+
+def test_abs_shift_train_mode_handles_full_max_len():
+    tok = Tokenizer()
+    model = _make_model("abs_shift").train()
+    # T == max_len -> the only legal offset is 0; must not raise or index OOB
+    x = torch.randint(0, tok.vocab_size, (2, 64))
+    assert model(input_ids=x)["logits"].shape == (2, 64, tok.vocab_size)
+
+
+def test_abs_shift_param_count_matches_absolute():
+    n_abs = _make_model("absolute").num_parameters()
+    n_shift = _make_model("abs_shift").num_parameters()
+    assert n_abs == n_shift, "abs_shift must only change indexing, not capacity"
 
 
 def test_runs_on_cpu():

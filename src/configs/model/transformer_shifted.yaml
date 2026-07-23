@@ -1,0 +1,16 @@
+# Candidate: same Small architecture as `transformer.yaml`, but with SHAPE-style
+# shifted absolute positional encoding. During training, position indices get a
+# random per-sequence offset in [0, max_len - T], so the whole embedding table
+# is trained; at eval the offset is 0 (identical to `absolute` inference).
+# Select with: train.py model=transformer_shifted
+_target_: src.model.transformer.DecoderTransformer
+vocab_size: 14        # digits 0-9, +, =, <eos>, <pad>
+d_model: 128
+n_layers: 4
+n_heads: 2
+head_dim: 64
+d_ff: 512             # 4x expansion
+max_len: 64           # shift range: training positions cover the full [0, 64)
+pe_variant: abs_shift
+dropout: 0.0
+pad_id: 13

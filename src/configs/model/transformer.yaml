@@ -9,6 +9,7 @@ head_dim: 64
 d_ff: 512             # 4x expansion
 max_len: 64           # covers the longest OOD sequence (~49); absolute PE
                       # positions beyond the training range are untrained (the point)
-pe_variant: absolute  # override per run: absolute | nope | rope
+pe_variant: absolute  # override per run: absolute | nope | rope | abs_shift
+                      # (abs_shift candidate also available as model=transformer_shifted)
 dropout: 0.0
 pad_id: 13

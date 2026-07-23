@@ -35,6 +35,16 @@ n_heads=2, head_dim=64, d_ff=512`, pre-norm, GELU, causal. One flag
 `model.pe_variant ∈ {absolute, nope, rope}` selects the positional encoding; everything else is
 identical, so any OOD difference is attributable to the PE alone.
 
+**Candidate — shifted absolute PE (`abs_shift`).** Same architecture and parameter count as
+`absolute`, but during training the position indices of each sequence are shifted by a random
+offset `k ~ U{0, max_len − T}` (SHAPE-style), so the entire `[0, max_len)` embedding table is
+trained; at eval the offset is 0. Train it with:
+
+```bash
+uv run python train.py model=transformer_shifted writer.run_name=addition_abs_shift
+# equivalently: model.pe_variant=abs_shift
+```
+
 ## Install
 
 Uses [`uv`](https://docs.astral.sh/uv/) (Python pinned in `.python-version`).

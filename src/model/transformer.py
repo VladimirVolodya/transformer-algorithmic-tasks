@@ -9,6 +9,16 @@ The ``pe_variant`` flag selects the only thing that differs across the ablation:
   Expected to generalize best.
 * ``"rope"``     -- rotary embeddings applied to Q/K inside attention. Expected
   to generalize reasonably.
+* ``"abs_shift"`` -- candidate: learned absolute embeddings with a random
+  per-sequence index shift during training (SHAPE-style, Kiyono et al. 2021).
+  Positions ``k .. k+T-1`` with ``k ~ U{0, max_len-T}`` are used in training so
+  the whole [0, max_len) embedding table gets trained; evaluation uses ``k=0``,
+  making it identical to ``absolute`` at inference time.
+* ``"pose"``    -- PoSE (Zhu et al. 2023, positional skip-wise training):
+  learned absolute embeddings, but each training sequence is split into two
+  chunks whose position indices get independent random skips, so both the
+  whole [0, max_len) table *and* long-range relative offsets are trained on
+  short sequences. Evaluation uses plain ``0..T-1`` positions.
 
 Everything else is identical across variants, so any OOD difference is
 attributable to the PE alone. The Small config (defaults below) is ~0.8M params.
@@ -90,14 +100,18 @@ class DecoderTransformer(nn.Module):
         pad_id: int = 13,
     ):
         super().__init__()
-        assert pe_variant in {"absolute", "nope", "rope"}, pe_variant
+        assert pe_variant in {"absolute", "nope", "rope", "abs_shift", "pose"}, pe_variant
         self.pe_variant = pe_variant
         self.max_len = max_len
         self.head_dim = head_dim
         self.pad_id = pad_id
 
         self.token_emb = nn.Embedding(vocab_size, d_model)
-        self.pos_emb = nn.Embedding(max_len, d_model) if pe_variant == "absolute" else None
+        self.pos_emb = (
+            nn.Embedding(max_len, d_model)
+            if pe_variant in {"absolute", "abs_shift", "pose"}
+            else None
+        )
         self.drop = nn.Dropout(dropout)
         self.blocks = nn.ModuleList(
             [
@@ -132,17 +146,42 @@ class DecoderTransformer(nn.Module):
             self.rope_cos, self.rope_sin = cos, sin
         return self.rope_cos.to(device), self.rope_sin.to(device)
 
-    def forward(self, input_ids, **batch):
+    def sample_pose_positions(self, B, T, device):
+        """PoSE skip-wise positions: two in-chunk-contiguous spans with random
+        skips, ``[v1, v1+t) ++ [v2+t, v2+T)`` where ``v1 <= v2 <= max_len-T``.
+        Covers the whole embedding table and long relative offsets."""
+        base = torch.arange(T, device=device)[None].expand(B, T)
+        budget = self.max_len - T
+        if budget <= 0 or T < 2:
+            return base
+        split = torch.randint(1, T, (B, 1), device=device)
+        v1 = torch.randint(0, budget + 1, (B, 1), device=device)
+        v2 = v1 + (torch.rand(B, 1, device=device) * (budget - v1 + 1).float()).long()
+        return base + torch.where(base < split, v1, v2)
+
+    def forward(self, input_ids, positions=None, **batch):
         B, T = input_ids.shape
         x = self.token_emb(input_ids)
 
-        if self.pe_variant == "absolute":
+        if self.pe_variant in {"absolute", "abs_shift", "pose"}:
             assert T <= self.max_len, (
                 f"seq len {T} exceeds absolute-PE max_len {self.max_len}; "
                 "increase model.max_len"
             )
             pos = torch.arange(T, device=input_ids.device)
-            x = x + self.pos_emb(pos)[None]
+            if positions is not None:
+                x = x + self.pos_emb(positions)
+            elif self.pe_variant == "abs_shift" and self.training:
+                # Per-sequence random shift so every index in [0, max_len)
+                # receives gradient even though training sequences are short.
+                offset = torch.randint(
+                    0, self.max_len - T + 1, (B, 1), device=input_ids.device
+                )
+                x = x + self.pos_emb(pos[None] + offset)
+            elif self.pe_variant == "pose" and self.training:
+                x = x + self.pos_emb(self.sample_pose_positions(B, T, input_ids.device))
+            else:
+                x = x + self.pos_emb(pos)[None]
 
         x = self.drop(x)
 
