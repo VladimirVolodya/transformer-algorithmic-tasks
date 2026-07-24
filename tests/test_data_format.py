@@ -76,3 +76,18 @@ def test_prompt_ends_with_equals():
 
 def test_vocab_size_is_19():
     assert TaskTokenizer().vocab_size == 19
+
+
+def test_sample_operand_ood_length_no_overflow():
+    """OOD lengths 20–30 must not blow up numpy int64 bounds."""
+    import numpy as np
+
+    from src.tasks.sampling import sample_operand
+
+    rng = np.random.default_rng(0)
+    for length in (1, 10, 20, 30):
+        n = sample_operand(length, rng.integers)
+        if length == 1:
+            assert 0 <= n <= 9
+        else:
+            assert len(str(n)) == length

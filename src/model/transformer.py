@@ -84,7 +84,7 @@ class DecoderTransformer(nn.Module):
         n_heads: int = 2,
         head_dim: int = 64,
         d_ff: int = 512,
-        max_len: int = 64,
+        max_len: int = 128,
         pe_variant: str = "absolute",
         dropout: float = 0.0,
         pad_id: int = 13,

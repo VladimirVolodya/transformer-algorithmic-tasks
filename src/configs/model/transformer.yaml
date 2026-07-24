@@ -1,15 +1,13 @@
-# Small config (~0.8M params, CPU-friendly). Everything is identical across the
-# three PE variants except `pe_variant`, so any OOD difference is due to PE alone.
-# vocab_size / pad_id are overridden at runtime by the unified task vocabulary.
+# Default architecture aligns with Phase-2 Arch B (baseline), NoPE.
+# Grid search overrides d_model / n_heads / d_ff via src.model.architectures.
 _target_: src.model.transformer.DecoderTransformer
 vocab_size: 19        # TaskTokenizer size (digits, ops, brackets, comma, specials)
 d_model: 128
 n_layers: 4
-n_heads: 2
-head_dim: 64
-d_ff: 512             # 4x expansion
-max_len: 64           # covers the longest OOD sequence (~49); absolute PE
-                      # positions beyond the training range are untrained (the point)
-pe_variant: absolute  # override per run: absolute | nope | rope
+n_heads: 4
+head_dim: 32          # d_model // n_heads
+d_ff: 512
+max_len: 128          # covers OOD sequences with slack
+pe_variant: nope      # causal mask only (no absolute/RoPE length binding)
 dropout: 0.0
 pad_id: 13

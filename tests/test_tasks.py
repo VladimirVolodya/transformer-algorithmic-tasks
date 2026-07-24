@@ -187,6 +187,7 @@ def test_run_benchmark_smoke():
         ood_lengths=[6],
         n_eval=4,
         device="cpu",
+        early_stop_id=None,  # keep the smoke cheap
     )
     json.dumps(results)  # must be JSON-serializable
     assert set(results["tasks"]) == set(ALL_TASKS)

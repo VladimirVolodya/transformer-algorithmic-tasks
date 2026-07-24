@@ -6,14 +6,16 @@ defaults:
 # task vocabulary (19 tokens), so the `model` group only fixes the architecture.
 benchmark:
   tasks: [addition, sort, dyck, index]
-  steps: 5000            # per task; matches the validated addition budget
+  steps: 15000           # per task (or earlier if ID hits early_stop_id)
   batch_size: 256
   lr: 3e-4
   train_min_len: 1
-  train_max_len: 5
-  id_lengths: [1, 2, 3, 4, 5]
-  ood_lengths: [6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+  train_max_len: 10      # in-distribution
+  id_lengths: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10]
+  ood_lengths: [11, 12, 13, 14, 15]
   n_eval: 300            # examples per (task, length) eval set
+  early_stop_id: 0.99    # stop training when ID exact-match reaches this
+  early_stop_every: 1000 # ID probe interval (steps)
   train_seed: 1          # keep constant across architectures: same train stream
   eval_seed: 0           # keep constant across architectures: same eval sets
   device: auto
